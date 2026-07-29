@@ -9,7 +9,7 @@ export const blogPostsToSeed: Omit<BlogPostTeaserItem, 'id'>[] = [
    {
     slug: 'wash-initiative-brings-clean-water',
     category: 'WASH',
-    imageUrl: '/homeimages/focus areas/WASH.jpg',
+    imageUrl: '/homeimages/focus-areas/WASH.jpg',
     imageHint: 'clean water community',
     title: 'TERIA’s WASH Initiative: Bringing Clean Water and Hope to Communities',
     summary: 'Access to clean water is life-changing. TERIA’s “Water is Life” initiative is tackling water scarcity by constructing boreholes, transforming daily life for hundreds of families and students in Rarieda.',
@@ -30,9 +30,9 @@ TERIA has now constructed **four boreholes** across the region, each one a beaco
 We believe that by providing access to clean water, we are not just quenching thirst—we are unlocking potential and empowering entire communities to thrive.`,
     date: '2023-11-10',
     galleryImages: [
-      { src: '/homeimages/focus areas/WASH.jpg', alt: 'Community members at the new borehole', imageHint: 'community water' },
-      { src: '/homeimages/IMG-20250618-WA0013 (1).jpg', alt: 'Children drinking clean water', imageHint: 'children water' },
-      { src: '/homeimages/IMG-20250618-WA0064 (1).jpg', alt: 'Water pump installation', imageHint: 'water pump' },
+      { src: '/homeimages/focus-areas/WASH.jpg', alt: 'Community members at the new borehole', imageHint: 'community water' },
+      { src: '/gallery-of-moments/IMG-20250618-WA0013-1.jpg', alt: 'Children drinking clean water', imageHint: 'children water' },
+      { src: '/gallery-of-moments/IMG-20250618-WA0064-1.jpg', alt: 'Water pump installation', imageHint: 'water pump' },
     ]
   },
   {
@@ -103,17 +103,17 @@ This event stood as a beautiful reminder of a powerful truth:
 The Chianda medical camp is a shining example of what can happen when communities unite — delivering not only healthcare, but also hope, dignity, and resilience.`,
     date: '2023-08-03',
     galleryImages: [
-      { src: '/homeimages/IMG-20250618-WA0072 (1).jpg', alt: 'Gallery Image 1 for Medical Camp', imageHint: 'medical event' },
-      { src: '/homeimages/IMG-20250618-WA0077 (1).jpg', alt: 'Gallery Image 2 for Medical Camp', imageHint: 'community health' },
-      { src: '/homeimages/IMG-20250618-WA0078 (1).jpg', alt: 'Gallery Image 3 for Medical Camp', imageHint: 'healthcare support' },
-      { src: '/homeimages/IMG-20250618-WA0083 (1).jpg', alt: 'Gallery Image 4 for Medical Camp', imageHint: 'community gathering' },
-      { src: '/homeimages/IMG-20250618-WA0084 (1).jpg', alt: 'Gallery Image 5 for Medical Camp', imageHint: 'medical supplies' },
-      { src: '/homeimages/IMG-20250618-WA0085 (1).jpg', alt: 'Gallery Image 6 for Medical Camp', imageHint: 'happy faces' },
-      { src: '/homeimages/IMG-20250618-WA0086 (1).jpg', alt: 'Gallery Image 7 for Medical Camp', imageHint: 'TERIA team' },
-      { src: '/homeimages/IMG-20250618-WA0087 (1).jpg', alt: 'Gallery Image 8 for Medical Camp', imageHint: 'medical checkup' },
-      { src: '/homeimages/IMG-20250618-WA0089 (1).jpg', alt: 'Gallery Image 9 for Medical Camp', imageHint: 'volunteers' },
-      { src: '/homeimages/IMG-20250618-WA0090 (1).jpg', alt: 'Gallery Image 10 for Medical Camp', imageHint: 'patient care' },
-      { src: '/homeimages/IMG-20250618-WA0095 (1).jpg', alt: 'Gallery Image 11 for Medical Camp', imageHint: 'community support' },
+      { src: '/homeimages/IMG-20250618-WA0072-1.jpg', alt: 'Gallery Image 1 for Medical Camp', imageHint: 'medical event' },
+      { src: '/homeimages/IMG-20250618-WA0077-1.jpg', alt: 'Gallery Image 2 for Medical Camp', imageHint: 'community health' },
+      { src: '/homeimages/IMG-20250618-WA0078-1.jpg', alt: 'Gallery Image 3 for Medical Camp', imageHint: 'healthcare support' },
+      { src: '/homeimages/IMG-20250618-WA0083-1.jpg', alt: 'Gallery Image 4 for Medical Camp', imageHint: 'community gathering' },
+      { src: '/homeimages/IMG-20250618-WA0084-1.jpg', alt: 'Gallery Image 5 for Medical Camp', imageHint: 'medical supplies' },
+      { src: '/homeimages/IMG-20250618-WA0085-2.jpg', alt: 'Gallery Image 6 for Medical Camp', imageHint: 'happy faces' },
+      { src: '/homeimages/IMG-20250618-WA0086-1.jpg', alt: 'Gallery Image 7 for Medical Camp', imageHint: 'TERIA team' },
+      { src: '/homeimages/IMG-20250618-WA0087-1.jpg', alt: 'Gallery Image 8 for Medical Camp', imageHint: 'medical checkup' },
+      { src: '/homeimages/IMG-20250618-WA0089-1.jpg', alt: 'Gallery Image 9 for Medical Camp', imageHint: 'volunteers' },
+      { src: '/homeimages/IMG-20250618-WA0090-1.jpg', alt: 'Gallery Image 10 for Medical Camp', imageHint: 'patient care' },
+      { src: '/homeimages/IMG-20250618-WA0095-1.jpg', alt: 'Gallery Image 11 for Medical Camp', imageHint: 'community support' },
     ]
   },
   {
@@ -163,13 +163,13 @@ Above all, TERIA is grateful to God for the success of this event and the streng
       { src: '/homeimages/11.jpeg', alt: 'MHDay Event Gallery Image 7', imageHint: 'school event' },
       { src: '/homeimages/10.jpeg', alt: 'MHDay Event Gallery Image 8', imageHint: 'event speakers' },
       { src: '/homeimages/9.jpeg', alt: 'MHDay Event Gallery Image 9', imageHint: 'group photo' },
-      { src: '/homeimages/1750269449138 (1).jpg', alt: 'MHDay Event Gallery Image 10', imageHint: 'community engagement' },
+      { src: '/homeimages/1750269449138-1.jpg', alt: 'MHDay Event Gallery Image 10', imageHint: 'community engagement' },
     ]
   },
   {
     slug: 'empowering-preteens-period-education-period-party-kenya',
     category: 'MHHM',
-    imageUrl: '/homeimages/period party.jpg',
+    imageUrl: '/homeimages/period-party.jpg',
     imageHint: 'event education',
     title: 'Period Party Kenya: Celebrating Young Girls with Knowledge and Confidence',
     summary: 'TERIA participated in the Period Party Kenya event, empowering preteen girls aged 9–12 with menstrual health education in a fun and supportive environment.',

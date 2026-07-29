@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: 'About TERIA | Our Mission, Values, and Impact in Kenya',
     description: 'Discover the story behind TERIA, our dedicated team, and our commitment to creating sustainable change in Siaya County.',
     images: [{
-      url: 'https://teriacbo.org/gallery%20of%20moments/IMG-20250618-WA0035%20(1).jpg',
+      url: 'https://teriacbo.org/gallery-of-moments/IMG-20250618-WA0035-1.jpg',
       width: 600,
       height: 450,
       alt: 'TERIA team during a community event',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   twitter: {
     title: 'About TERIA | Mission, Vision & Team',
     description: 'Learn about TERIA (The Empowerment, Relief and Inclusion Agenda) and our work to empower vulnerable communities in Kenya.',
-    images: ['https://teriacbo.org/gallery%20of%20moments/IMG-20250618-WA0035%20(1).jpg'],
+    images: ['https://teriacbo.org/gallery-of-moments/IMG-20250618-WA0035-1.jpg'],
   }
 };
 
@@ -228,7 +228,7 @@ const AboutPage = () => {
             </div>
             <div data-aos="fade-left">
               <Image
-                src="/gallery of moments/IMG-20250618-WA0035 (1).jpg"
+                src="/gallery-of-moments/IMG-20250618-WA0035-1.jpg"
                 alt="TERIA team distributing sanitary pads to students"
                 width={600}
                 height={450}
@@ -285,7 +285,7 @@ const AboutPage = () => {
                 <p className="text-base text-foreground/80 leading-relaxed">
                   TERIA is governed by a Management Committee, which is presided over by a Chairperson. The Committee also includes a Vice-Chairperson, Secretary, Organizing Secretary, and Treasurer, with the roles and responsibilities of these positions clearly defined in the{' '}
                   <a 
-                    href="/gallery of moments/Bylaws of the TERIA CBO.pdf" 
+                    href="/gallery-of-moments/Bylaws-of-the-TERIA-CBO.pdf" 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-accent font-semibold link-underline"
