@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://teriacbo.org/sitemap.xml
