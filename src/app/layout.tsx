@@ -3,10 +3,7 @@ import type { Metadata } from 'next';
 import React from 'react'; // Ensure React is imported
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import Navbar from '@/components/navbar';
-import Footer from '@/components/footer';
-import CallFAB from '@/components/fab';
-import ReturnToTopButton from '@/components/return-to-top-button';
+import SiteChrome from '@/components/site-chrome';
 import { cn } from '@/lib/utils';
 import Script from 'next/script';
 import { ABeeZee, Poppins, Montserrat } from 'next/font/google';
@@ -109,13 +106,7 @@ export default function RootLayout({
       <body className={cn(abeezee.variable, poppins.variable, montserrat.variable, "font-body antialiased flex flex-col min-h-screen")}>
         <AOSInitializerClient />
         <div className="flex flex-col min-h-screen bg-background">
-          <Navbar />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
-          <CallFAB />
-          <ReturnToTopButton />
+          <SiteChrome>{children}</SiteChrome>
           <Toaster />
         </div>
       </body>
