@@ -1,17 +1,17 @@
 import admin from 'firebase-admin';
-import path from 'path';
-
-// This is a more robust way to find the project root and then the file.
-const serviceAccountPath = path.resolve(process.cwd(), 'public', 'serviceaccount.json');
 
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
     });
   } catch (error: any) {
     console.error('Firebase admin initialization error', error.stack);
   }
 }
 
-export default admin.firestore();
+export const adminAuth = admin.auth();
