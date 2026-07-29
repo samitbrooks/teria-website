@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
 import Script from 'next/script';
 import { ABeeZee, Poppins, Montserrat } from 'next/font/google';
 import AOSInitializerClient from '@/components/AOSInitializerClient';
-import Chatbot from '@/components/chatbot';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://teriacbo.org'),
@@ -115,7 +114,6 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <Chatbot />
           <CallFAB />
           <ReturnToTopButton />
           <Toaster />
