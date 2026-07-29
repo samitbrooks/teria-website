@@ -1,6 +1,8 @@
 // src/app/admin/posts/edit/[id]/page.tsx
 'use client';
 
+export const runtime = 'edge';
+
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
