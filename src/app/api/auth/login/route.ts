@@ -1,13 +1,26 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { getUserByEmail, createAuditLog } from '@/lib/d1';
+import { getUserByEmail, createUser, createAuditLog } from '@/lib/d1';
 import { verifyPassword, createSessionToken } from '@/lib/auth-service';
 
 export const runtime = 'edge';
 
-// Fallback initial admin credentials
-const FALLBACK_ADMIN_EMAIL = 'samikidemi@gmail.com';
-const FALLBACK_ADMIN_HASH = 'e04853b7d862984b0509b11e23ba94af3135a5712089bfffed9c3e78b7baa445'; // Admin@12345
+const BUILTIN_ADMINS = [
+  {
+    id: 'admin-main',
+    email: 'info@teriacbo.org',
+    hash: '1c5e9f07b33953783237d16a3efb866981cd6e07b0120e84667621175e15ef58', // Teria@2030!@
+    name: 'TERIA Administrator',
+    role: 'admin',
+  },
+  {
+    id: 'admin-1',
+    email: 'samikidemi@gmail.com',
+    hash: 'e04853b7d862984b0509b11e23ba94af3135a5712089bfffed9c3e78b7baa445', // Admin@12345
+    name: 'Samuel Kidemi',
+    role: 'admin',
+  },
+];
 
 export async function POST(request: Request) {
   try {
@@ -41,16 +54,30 @@ export async function POST(request: Request) {
       console.warn('D1 lookup warning, falling back to credentials check:', err);
     }
 
-    // 2. Fallback check for initial admin user
-    if (!authenticatedUser && normalizedEmail === FALLBACK_ADMIN_EMAIL) {
-      const isFallbackValid = await verifyPassword(password, FALLBACK_ADMIN_HASH);
-      if (isFallbackValid) {
-        authenticatedUser = {
-          id: 'admin-1',
-          email: FALLBACK_ADMIN_EMAIL,
-          name: 'Samuel Kidemi',
-          role: 'admin',
-        };
+    // 2. Check built-in admin credentials
+    if (!authenticatedUser) {
+      const builtin = BUILTIN_ADMINS.find((a) => a.email.toLowerCase() === normalizedEmail);
+      if (builtin) {
+        const isFallbackValid = await verifyPassword(password, builtin.hash);
+        if (isFallbackValid) {
+          authenticatedUser = {
+            id: builtin.id,
+            email: builtin.email,
+            name: builtin.name,
+            role: builtin.role,
+          };
+
+          // Upsert to D1
+          try {
+            await createUser({
+              id: builtin.id,
+              email: builtin.email,
+              name: builtin.name,
+              role: builtin.role,
+              password_hash: builtin.hash,
+            });
+          } catch {}
+        }
       }
     }
 
