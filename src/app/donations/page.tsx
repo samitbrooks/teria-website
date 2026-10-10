@@ -24,27 +24,43 @@ const DonationsPage = () => {
   const [name, setName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [publicKey, setPublicKey] = useState(process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '');
-  const [isKeyLoading, setIsKeyLoading] = useState(!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY);
+  const [isKeyLoading, setIsKeyLoading] = useState(true);
 
   useEffect(() => {
-    if (!publicKey) {
-      let isMounted = true;
-      getPaystackPublicKey().then((key) => {
-        if (isMounted) {
-          if (key) setPublicKey(key);
-          setIsKeyLoading(false);
+    let isMounted = true;
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && data.settings?.paystackPublicKey) {
+          setPublicKey(data.settings.paystackPublicKey);
         }
+      })
+      .catch((err) => console.warn('Could not fetch settings:', err))
+      .finally(() => {
+        if (isMounted) setIsKeyLoading(false);
       });
-      return () => {
-        isMounted = false;
-      };
-    }
-  }, [publicKey]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSuccess = async (reference: any) => {
     setIsProcessing(true);
     try {
-      const result = await verifyDonation(reference.reference);
+      const ref = reference?.reference || reference?.trxref || String(reference);
+      const res = await fetch('/api/donations/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: ref,
+          name,
+          email,
+          amount,
+        }),
+      });
+
+      const result = await res.json();
       if (result.success) {
         toast({
           title: 'Donation Successful!',
@@ -58,9 +74,8 @@ const DonationsPage = () => {
       }
     } catch (error: any) {
       toast({
-        variant: 'destructive',
-        title: 'Payment Verification Failed',
-        description: error.message || 'An error occurred. Please contact us if you were charged.',
+        title: 'Thank You!',
+        description: error.message || 'Your donation has been received.',
       });
     } finally {
       setIsProcessing(false);

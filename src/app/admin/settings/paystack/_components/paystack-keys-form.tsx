@@ -1,7 +1,7 @@
 // src/app/admin/settings/paystack/_components/paystack-keys-form.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { updatePaystackKeys } from '../actions';
 import { useAuth } from '@/hooks/use-auth';
 
 const paystackSettingsSchema = z.object({
@@ -22,6 +21,7 @@ type FormValues = z.infer<typeof paystackSettingsSchema>;
 
 export default function PaystackKeysForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   const form = useForm<FormValues>({
@@ -32,26 +32,62 @@ export default function PaystackKeysForm() {
     },
   });
 
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && data.settings?.paystackPublicKey) {
+          form.setValue('paystackPublicKey', data.settings.paystackPublicKey);
+        }
+      })
+      .catch((err) => console.warn('Could not load current settings:', err))
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [form]);
+
   const onSubmit = async (data: FormValues) => {
     if (!user?.email) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to perform this action.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to perform this action.' });
+      return;
     }
     setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append('paystackPublicKey', data.paystackPublicKey || '');
-    formData.append('paystackSecretKey', data.paystackSecretKey || '');
 
-    const result = await updatePaystackKeys(formData, user.email);
-    
-    if (result.success) {
-      toast({ title: 'Success', description: result.message });
-      form.reset({ paystackPublicKey: '', paystackSecretKey: ''});
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    try {
+      const payload: any = {};
+      if (data.paystackPublicKey !== undefined) payload.paystackPublicKey = data.paystackPublicKey.trim();
+      if (data.paystackSecretKey !== undefined && data.paystackSecretKey.trim()) {
+        payload.paystackSecretKey = data.paystackSecretKey.trim();
+      }
+
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        toast({
+          title: 'Keys Updated Successfully!',
+          description: payload.paystackPublicKey?.startsWith('pk_live_')
+            ? 'Paystack is now LIVE! Donors can now make real donations.'
+            : 'Paystack keys saved to database.',
+        });
+        form.setValue('paystackSecretKey', '');
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message || 'Failed to update keys.' });
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message || 'An unexpected error occurred.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   return (
