@@ -64,7 +64,7 @@ export default function PaystackKeysForm() {
             <FormItem>
               <FormLabel>Paystack Public Key</FormLabel>
               <FormControl>
-                <Input placeholder="pk_test_..." {...field} />
+                <Input placeholder="pk_live_... (or pk_test_...)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,7 +77,7 @@ export default function PaystackKeysForm() {
             <FormItem>
               <FormLabel>Paystack Secret Key</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="sk_test_..." {...field} />
+                <Input type="password" placeholder="sk_live_... (or sk_test_...)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
