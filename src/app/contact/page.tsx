@@ -93,12 +93,12 @@ const ContactPage = () => {
                     <div className="flex items-start">
                       <Phone className="w-6 h-6 text-accent mr-3 mt-1 shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-primary">Contact Persons</h3>
+                        <h3 className="font-semibold text-primary">Phone Numbers</h3>
                         <p className="text-foreground/80">
-                          <span className="font-medium">Linet Kohanya Amollo:</span> <a href="tel:+254733765847" className="hover:text-primary link-underline">+254 733 765 847</a>
+                          <a href="tel:+254795185979" className="hover:text-primary link-underline font-medium">+254 795 185 979</a> (0795185979)
                         </p>
                         <p className="text-foreground/80">
-                          <span className="font-medium">Vincent Ouma:</span> <a href="tel:+254795185979" className="hover:text-primary link-underline">+254 795 185 979</a>
+                          <a href="tel:+254754929777" className="hover:text-primary link-underline font-medium">+254 754 929 777</a> (0754929777)
                         </p>
                       </div>
                     </div>

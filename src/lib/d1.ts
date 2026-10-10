@@ -205,8 +205,8 @@ function getFallbackData<T>(sql: string, params: any[]): T[] {
         key: 'site',
         value: JSON.stringify({
           contactEmail: 'teria.cbo@gmail.com',
-          contactPhone1: '+254 700 000 000',
-          contactPhone2: '+254 711 000 000',
+          contactPhone1: '+254 795 185 979',
+          contactPhone2: '+254 754 929 777',
           facebookUrl: 'https://facebook.com',
           instagramUrl: 'https://instagram.com',
           tiktokUrl: 'https://tiktok.com',
@@ -539,8 +539,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const rows = await queryD1('SELECT value FROM settings WHERE key = ? LIMIT 1', ['site']);
   const defaults: SiteSettings = {
     contactEmail: 'teria.cbo@gmail.com',
-    contactPhone1: '+254 700 000 000',
-    contactPhone2: '+254 711 000 000',
+    contactPhone1: '+254 795 185 979',
+    contactPhone2: '+254 754 929 777',
     facebookUrl: 'https://facebook.com',
     instagramUrl: 'https://instagram.com',
     tiktokUrl: 'https://tiktok.com',
