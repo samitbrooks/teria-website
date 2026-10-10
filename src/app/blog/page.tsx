@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeImageUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
@@ -83,7 +83,7 @@ const BlogPage = () => {
                       <CardHeader className="p-0">
                          <Link href={`/blog/${post.slug}`} aria-label={`Read more about ${post.title}`}>
                           <Image
-                            src={post.imageUrl}
+                            src={sanitizeImageUrl(post.imageUrl)}
                             alt={post.title}
                             width={600}
                             height={350}

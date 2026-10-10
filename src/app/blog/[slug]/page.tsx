@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BlogImageCarousel from '@/components/blog-image-carousel';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeImageUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
@@ -196,7 +196,7 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
           {post.imageUrl && (
             <div className="mb-8 overflow-hidden rounded-lg shadow-lg">
               <Image
-                src={post.imageUrl}
+                src={sanitizeImageUrl(post.imageUrl)}
                 alt={post.title}
                 width={800}
                 height={450}
@@ -212,7 +212,12 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
           </div>
           
           {post.galleryImages && post.galleryImages.length > 0 && (
-            <BlogImageCarousel images={post.galleryImages} />
+            <BlogImageCarousel
+              images={post.galleryImages.map((img) => ({
+                ...img,
+                src: sanitizeImageUrl(img.src),
+              }))}
+            />
           )}
 
         </article>

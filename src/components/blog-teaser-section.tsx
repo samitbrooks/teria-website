@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeImageUrl } from '@/lib/utils';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import type { BlogPostTeaserItem } from '@/types';
@@ -57,7 +57,7 @@ const BlogTeaserSection = () => {
                 <CardHeader className="p-0">
                   <Link href={`/blog/${post.slug}`} aria-label={`Read more about ${post.title}`}>
                     <Image
-                      src={post.imageUrl}
+                      src={sanitizeImageUrl(post.imageUrl)}
                       alt={post.title}
                       width={600}
                       height={400}
