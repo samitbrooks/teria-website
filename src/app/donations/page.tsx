@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PaystackButton } from 'react-paystack';
 import type { PaystackProps } from 'react-paystack/dist/types';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Heart, Loader2, Check, BookOpen, Users, Leaf } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { verifyDonation } from './actions';
+import { verifyDonation, getPaystackPublicKey } from './actions';
 import { useAuth } from '@/hooks/use-auth';
 
 const predefinedAmounts = [500, 1000, 2500, 5000, 10000, 20000];
@@ -23,8 +23,23 @@ const DonationsPage = () => {
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [publicKey, setPublicKey] = useState(process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '');
+  const [isKeyLoading, setIsKeyLoading] = useState(!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY);
 
-  const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
+  useEffect(() => {
+    if (!publicKey) {
+      let isMounted = true;
+      getPaystackPublicKey().then((key) => {
+        if (isMounted) {
+          if (key) setPublicKey(key);
+          setIsKeyLoading(false);
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [publicKey]);
 
   const handleSuccess = async (reference: any) => {
     setIsProcessing(true);
@@ -194,12 +209,29 @@ const DonationsPage = () => {
                 </div>
               </div>
 
-              {isValidEmail(email) ? (
+              {!publicKey ? (
+                <div className="space-y-2">
+                  <Button className="w-full h-11" disabled variant="outline">
+                    {isKeyLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparing secure checkout...
+                      </>
+                    ) : (
+                      'Payment gateway is being configured'
+                    )}
+                  </Button>
+                  {!isKeyLoading && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Payments will be enabled once Paystack API keys are set in the admin settings.
+                    </p>
+                  )}
+                </div>
+              ) : isValidEmail(email) ? (
                 <PaystackButton
                   {...componentProps}
                   className={cn(
-                    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-                    'bg-primary text-primary-foreground hover:bg-primary/90',
+                    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+                    'bg-primary text-primary-foreground hover:bg-primary/90 shadow',
                     'h-11 rounded-md px-8 w-full'
                   )}
                   disabled={isProcessing || !name || !email || !amount || amount < 100}

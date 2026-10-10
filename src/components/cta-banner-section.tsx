@@ -9,7 +9,7 @@ const CTABannerSection = () => {
   return (
     <section className="relative py-16 sm:py-20 lg:py-24 bg-primary/10">
        <Image
-        src="/homeimages/partner.png"
+        src="/homeimages/partner.jpg"
         alt="Community members collaborating and partnering"
         fill
         className="-z-10 opacity-20 object-cover"

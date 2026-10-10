@@ -96,8 +96,6 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <head>
         <meta name="google-site-verification" content="tXKEZAaaxEOzrK_cCfKN732eKeU-YAD0VenZksthA94" />
-        {/* Font Awesome script for any potential social icons or others that might not be in Lucide */}
-        <script src="https://kit.fontawesome.com/a076d05399.js" crossOrigin="anonymous" async></script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
