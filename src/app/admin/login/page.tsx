@@ -36,7 +36,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.push('/admin');
+      router.replace('/admin');
     }
   }, [user, router]);
 
@@ -44,14 +44,18 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(data.email, data.password);
-      router.push('/admin');
+      router.replace('/admin');
     } catch (err: any) {
       setError(err.message || 'Failed to log in. Please check your credentials.');
     }
   };
   
   if (user) {
-    return null;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (

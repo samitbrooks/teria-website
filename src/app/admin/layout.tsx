@@ -108,11 +108,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && pathname !== '/admin/login') {
       router.push('/admin/login');
     }
-  }, [user, loading, router]);
-
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (
@@ -122,12 +121,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && pathname !== '/admin/login') {
-     return null;
-  }
-  
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

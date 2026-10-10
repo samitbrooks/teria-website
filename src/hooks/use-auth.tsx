@@ -31,13 +31,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const login = (email: string, pass: string) => {
+  const login = async (email: string, pass: string) => {
     setLoading(true);
-    return signInWithEmailAndPassword(auth, email, pass).finally(() => setLoading(false));
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      setUser(userCredential.user);
+      return userCredential;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    return signOut(auth);
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {
