@@ -9,8 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "db:seed": "tsx src/scripts/seed-db.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
@@ -43,8 +42,6 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
-    "firebase": "^10.12.2",
-    "firebase-admin": "^12.1.1",
     "genkit": "^1.8.0",
     "lucide-react": "^0.475.0",
     "next": "15.3.8",

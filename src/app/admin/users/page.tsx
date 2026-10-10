@@ -19,13 +19,9 @@ export default function UsersPage() {
       </Card>
        <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>How to Add New Users</AlertTitle>
+        <AlertTitle>Cloudflare D1 User Security</AlertTitle>
         <AlertDescription>
-          For security, new admin users must be added through the Firebase Console. Go to the{" "}
-          <Link href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-            Firebase Console
-          </Link>
-          , navigate to the **Authentication** section, and add a new user with an email and password. They will then be able to log in here.
+          Admin accounts are securely stored in your Cloudflare D1 database with SHA-256 salted hashes. You can add or manage administrators using the dashboard or via your Cloudflare D1 SQL console.
         </AlertDescription>
       </Alert>
     </div>
