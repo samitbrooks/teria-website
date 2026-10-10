@@ -1,11 +1,17 @@
+// src/hooks/use-auth.tsx
 'use client';
 
 import React, { useState, useEffect, useContext, createContext, ReactNode } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName?: string | null;
+  role?: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<any>;
   logout: () => Promise<any>;
@@ -19,24 +25,64 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check current session from HTTP-only cookie on mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    let isMounted = true;
 
-    return () => unsubscribe();
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            if (data.authenticated && data.user) {
+              setUser(data.user);
+            } else {
+              setUser(null);
+            }
+          }
+        } else {
+          if (isMounted) setUser(null);
+        }
+      } catch (err) {
+        console.warn('Session check failed:', err);
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    checkSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      setUser(userCredential.user);
-      return userCredential;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to log in. Please check your credentials.');
+      }
+
+      setUser(data.user);
+      return data.user;
     } finally {
       setLoading(false);
     }
@@ -45,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setLoading(true);
     try {
-      await signOut(auth);
+      await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
     } finally {
       setLoading(false);

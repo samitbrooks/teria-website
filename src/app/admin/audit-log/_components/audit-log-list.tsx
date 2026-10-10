@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { AuditLogEntry } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
@@ -12,9 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 function getInitials(email: string) {
-    if (!email) return 'A';
-    const parts = email.split('@');
-    return parts[0].charAt(0).toUpperCase();
+  if (!email) return 'A';
+  const parts = email.split('@');
+  return parts[0].charAt(0).toUpperCase();
 }
 
 export default function AuditLogList() {
@@ -22,20 +20,41 @@ export default function AuditLogList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const logsCollection = collection(db, 'auditLog');
-    const q = query(logsCollection, orderBy('timestamp', 'desc'));
+    let isMounted = true;
+    fetch('/api/audit')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && Array.isArray(data.logs)) {
+          setLogs(data.logs);
+        }
+      })
+      .catch(err => console.error('Error fetching audit logs:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLogEntry));
-      setLogs(logsData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  const formatDate = (dateVal: any) => {
+    try {
+      if (dateVal?.toDate && typeof dateVal.toDate === 'function') {
+        return format(dateVal.toDate(), 'PPP p');
+      }
+      return format(new Date(dateVal), 'PPP p');
+    } catch {
+      return 'Recent';
+    }
+  };
+
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   if (logs.length === 0) {
@@ -44,37 +63,39 @@ export default function AuditLogList() {
 
   return (
     <div className="overflow-x-auto">
-        <Table>
+      <Table>
         <TableHeader>
-            <TableRow>
+          <TableRow>
             <TableHead>User</TableHead>
             <TableHead>Action</TableHead>
             <TableHead>Details</TableHead>
             <TableHead className="text-right">Timestamp</TableHead>
-            </TableRow>
+          </TableRow>
         </TableHeader>
         <TableBody>
-            {logs.map((log) => (
+          {logs.map((log) => (
             <TableRow key={log.id}>
-                <TableCell>
+              <TableCell>
                 <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback>{getInitials(log.user)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{log.user}</span>
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getInitials(log.user)}</AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{log.user}</span>
                 </div>
-                </TableCell>
-                <TableCell>
-                    <Badge variant={log.action.startsWith('delete') ? 'destructive' : 'secondary'}>{log.action}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{log.details}</TableCell>
-                <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                    {format(log.timestamp.toDate(), 'PPP p')}
-                </TableCell>
+              </TableCell>
+              <TableCell>
+                <Badge variant={log.action.toLowerCase().includes('delete') ? 'destructive' : 'secondary'}>
+                  {log.action}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-muted-foreground">{log.details}</TableCell>
+              <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                {formatDate(log.timestamp)}
+              </TableCell>
             </TableRow>
-            ))}
+          ))}
         </TableBody>
-        </Table>
+      </Table>
     </div>
   );
 }

@@ -1,9 +1,8 @@
-
+// src/app/actions/newsletter.ts
 'use server';
 
 import { z } from 'zod';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { createSubscriber } from '@/lib/d1';
 
 const newsletterSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -24,27 +23,25 @@ export async function handleNewsletterSubscribe(formData: FormData): Promise<Sub
       message: validationResult.error.issues[0].message,
     };
   }
-  
-  const validatedEmail = validationResult.data.email;
+
+  const validatedEmail = validationResult.data.email.trim().toLowerCase();
 
   try {
-    // Check if email already exists
-    const subscribersCollection = collection(db, 'newsletterSubscribers');
-    const q = query(subscribersCollection, where('email', '==', validatedEmail));
-    const querySnapshot = await getDocs(q);
+    const res = await createSubscriber(validatedEmail);
 
-    if (!querySnapshot.empty) {
+    if (res.alreadyExists) {
       return {
         success: false,
         message: 'This email is already subscribed.',
       };
     }
 
-    // Add new subscriber to Firestore
-    await addDoc(subscribersCollection, {
-      email: validatedEmail,
-      subscribedAt: serverTimestamp(),
-    });
+    if (!res.success) {
+      return {
+        success: false,
+        message: 'Failed to record subscription. Please try again.',
+      };
+    }
 
     return {
       success: true,

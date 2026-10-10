@@ -11,8 +11,6 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { handleNewsletterSubscribe } from '@/app/actions/newsletter';
 import { useRef, useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { SiteSettings } from '@/types';
 
 const Footer = () => {
@@ -21,13 +19,19 @@ const Footer = () => {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   useEffect(() => {
-    const docRef = doc(db, 'settings', 'site');
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setSettings(docSnap.data() as SiteSettings);
-      }
-    });
-    return () => unsubscribe();
+    let isMounted = true;
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && data.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(err => console.warn('Error fetching settings for footer:', err));
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const quickLinks = [

@@ -1,8 +1,7 @@
 // src/app/admin/settings/paystack/actions.ts
 'use server';
 
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { saveSiteSettings } from '@/lib/d1';
 import { z } from 'zod';
 import { encrypt } from '@/lib/encryption';
 import { revalidatePath } from 'next/cache';
@@ -20,13 +19,12 @@ export interface UpdatePaystackKeysResponse {
 export async function getEnvKeys() {
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
   const secretKey = process.env.PAYSTACK_SECRET_KEY || '';
-  
+
   // Mask the secret key for security
   const maskedSecretKey = secretKey ? `${secretKey.substring(0, 8)}...${secretKey.substring(secretKey.length - 4)}` : '';
 
   return { publicKey, maskedSecretKey };
 }
-
 
 export async function updatePaystackKeys(formData: FormData): Promise<UpdatePaystackKeysResponse> {
   const rawData = {
@@ -43,21 +41,16 @@ export async function updatePaystackKeys(formData: FormData): Promise<UpdatePays
   const { paystackPublicKey, paystackSecretKey } = validationResult.data;
 
   try {
-    const settingsRef = doc(db, 'settings', 'site');
-    
-    // Encrypt the secret key before storing it
     const paystackSecretKeyEncrypted = paystackSecretKey ? encrypt(paystackSecretKey) : '';
 
-    await setDoc(settingsRef, {
+    await saveSiteSettings({
       paystackPublicKey,
       paystackSecretKeyEncrypted,
-    }, { merge: true });
-    
-    // Revalidate paths that might use these keys
-    revalidatePath('/donate');
+    });
+
+    revalidatePath('/donations');
 
     return { success: true, message: 'Paystack keys updated successfully.' };
-
   } catch (error) {
     console.error('Error updating Paystack keys:', error);
     return { success: false, message: 'An unexpected error occurred.' };

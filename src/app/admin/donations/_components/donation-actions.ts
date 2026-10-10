@@ -1,8 +1,7 @@
 // src/app/admin/donations/_components/donation-actions.ts
 'use server';
 
-import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { executeD1 } from '@/lib/d1';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { logAudit } from '@/lib/audit';
@@ -22,31 +21,28 @@ export async function updateDonation(id: string, data: DonationFormValues, modif
     return { success: false, message: validation.error.issues[0].message };
   }
 
-  const donationRef = doc(db, 'donations', id);
   try {
-    await updateDoc(donationRef, {
-      ...validation.data,
-      modifiedAt: serverTimestamp(),
-      modifiedBy: modifiedBy,
-    });
+    await executeD1(
+      'UPDATE donations SET name = ?, email = ?, amount = ?, status = ? WHERE id = ?',
+      [validation.data.name, validation.data.email, validation.data.amount, validation.data.status, id]
+    );
     await logAudit('update_donation', modifiedBy, `Updated donation record for ${validation.data.email} (ID: ${id})`);
     revalidatePath('/admin/donations');
     return { success: true };
   } catch (error) {
-    console.error("Error updating donation:", error);
+    console.error('Error updating donation:', error);
     return { success: false, message: 'Failed to update donation.' };
   }
 }
 
 export async function deleteDonation(id: string, userEmail: string) {
-  const donationRef = doc(db, 'donations', id);
   try {
-    await deleteDoc(donationRef);
+    await executeD1('DELETE FROM donations WHERE id = ?', [id]);
     await logAudit('delete_donation', userEmail, `Deleted donation record (ID: ${id})`);
     revalidatePath('/admin/donations');
     return { success: true };
   } catch (error) {
-    console.error("Error deleting donation:", error);
+    console.error('Error deleting donation:', error);
     return { success: false, message: 'Failed to delete donation.' };
   }
 }

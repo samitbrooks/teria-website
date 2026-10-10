@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { Donation } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DonationsList from './_components/donations-list';
@@ -16,39 +14,50 @@ export default function DonationsPage() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchDonations = () => {
+    fetch('/api/donations')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.donations)) {
+          setDonations(data.donations);
+        }
+      })
+      .catch(err => console.error('Error fetching donations:', err))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    const donationsCollection = collection(db, 'donations');
-    const q = query(donationsCollection, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const donationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Donation));
-      setDonations(donationsData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    fetchDonations();
   }, []);
 
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <DonationsDashboard donations={donations} />
-      
+
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Donations Over Last 30 Days</CardTitle></CardHeader>
-            <CardContent>
-                <DonationsChart donations={donations} />
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Donations Over Last 30 Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DonationsChart donations={donations} />
+          </CardContent>
         </Card>
         <Card>
-            <CardHeader><CardTitle>Top Donors</CardTitle></CardHeader>
-            <CardContent>
-                <TopDonors donations={donations} />
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Top Donors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TopDonors donations={donations} />
+          </CardContent>
         </Card>
       </div>
 
@@ -57,7 +66,7 @@ export default function DonationsPage() {
           <CardTitle>All Donations</CardTitle>
         </CardHeader>
         <CardContent>
-          <DonationsList donations={donations} />
+          <DonationsList donations={donations} onUpdate={fetchDonations} />
         </CardContent>
       </Card>
     </div>

@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { NewsletterSubscriber } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Download } from 'lucide-react';
@@ -16,32 +14,46 @@ export default function SubscribersList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const fetchSubscribers = () => {
+    fetch('/api/subscribers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.subscribers)) {
+          setSubscribers(data.subscribers);
+        }
+      })
+      .catch(err => console.error('Error fetching subscribers:', err))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    const subscribersCollection = collection(db, 'newsletterSubscribers');
-    const q = query(subscribersCollection, orderBy('subscribedAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const subscribersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NewsletterSubscriber));
-      setSubscribers(subscribersData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    fetchSubscribers();
   }, []);
+
+  const formatDate = (dateVal: any, pattern = 'PPP p') => {
+    try {
+      if (dateVal?.toDate && typeof dateVal.toDate === 'function') {
+        return format(dateVal.toDate(), pattern);
+      }
+      return format(new Date(dateVal), pattern);
+    } catch {
+      return 'Recent';
+    }
+  };
 
   const exportToCSV = () => {
     const csvRows = [
-      ['Email', 'Subscription Date'], // CSV Header
-      ...filteredSubscribers.map(sub => [sub.email, format(sub.subscribedAt.toDate(), 'yyyy-MM-dd HH:mm:ss')])
+      ['Email', 'Subscription Date'],
+      ...filteredSubscribers.map(sub => [sub.email, formatDate(sub.subscribedAt, 'yyyy-MM-dd HH:mm:ss')]),
     ];
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + csvRows.map(e => e.join(",")).join("\n");
-    
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + csvRows.map(e => e.join(',')).join('\n');
+
     const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "newsletter_subscribers.csv");
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'newsletter_subscribers.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -52,7 +64,11 @@ export default function SubscribersList() {
   );
 
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -74,22 +90,24 @@ export default function SubscribersList() {
         <p className="text-center text-muted-foreground py-8">No subscribers found.</p>
       ) : (
         <div className="overflow-x-auto">
-            <Table>
+          <Table>
             <TableHeader>
-                <TableRow>
+              <TableRow>
                 <TableHead>Email Address</TableHead>
                 <TableHead className="text-right">Subscription Date</TableHead>
-                </TableRow>
+              </TableRow>
             </TableHeader>
             <TableBody>
-                {filteredSubscribers.map((subscriber) => (
+              {filteredSubscribers.map((subscriber) => (
                 <TableRow key={subscriber.id}>
-                    <TableCell className="font-medium">{subscriber.email}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">{format(subscriber.subscribedAt.toDate(), 'PPP p')}</TableCell>
+                  <TableCell className="font-medium">{subscriber.email}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {formatDate(subscriber.subscribedAt)}
+                  </TableCell>
                 </TableRow>
-                ))}
+              ))}
             </TableBody>
-            </Table>
+          </Table>
         </div>
       )}
     </div>

@@ -1,10 +1,8 @@
-
+// src/app/contact/actions.ts
 'use server';
 
 import { contactFormSchema, type ContactFormData } from '@/lib/schemas/contact-schema';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
-
+import { createMessage } from '@/lib/d1';
 
 export interface SubmitContactFormResponse {
   success: boolean;
@@ -27,32 +25,29 @@ export async function handleContactSubmit(data: ContactFormData): Promise<Submit
   }
 
   const { name, email, subject, message } = validationResult.data;
-  
+
   try {
-    // Save submission to Firestore
-    await addDoc(collection(db, 'contactSubmissions'), {
+    // Save submission to Cloudflare D1
+    await createMessage({
       name,
       email,
-      subject,
+      subject: subject || '',
       message,
-      submittedAt: serverTimestamp(),
-      read: false, // Default to unread
     });
 
-    // Email sending simulation can remain for logging if desired
-    console.log('--- Contact Form Submission Attempt (Email Sending Simulated) ---');
+    console.log('--- Contact Form Submission Recorded in D1 ---');
     console.log('Timestamp:', new Date().toISOString());
-    console.log('Intended Recipient:', 'teria.cbo@gmail.com');
+    console.log('Sender:', email);
 
-    return { 
-      success: true, 
-      message: 'Your message has been sent successfully! We will get back to you shortly.' 
+    return {
+      success: true,
+      message: 'Your message has been sent successfully! We will get back to you shortly.',
     };
   } catch (error) {
     console.error('Error processing contact form:', error);
-    return { 
-      success: false, 
-      message: 'An error occurred while attempting to send your message. Please try again later.' 
+    return {
+      success: false,
+      message: 'An error occurred while attempting to send your message. Please try again later.',
     };
   }
 }

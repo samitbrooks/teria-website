@@ -3,13 +3,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Camera } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BlogImageCarousel from '@/components/blog-image-carousel';
-import { cn, sanitizeImageUrl } from '@/lib/utils';
+import { sanitizeImageUrl } from '@/lib/utils';
 import { format } from 'date-fns';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { getBlogPostBySlug, getBlogPosts } from '@/lib/d1';
 import type { BlogPostTeaserItem } from '@/types';
 
 interface BlogPostPageProps {
@@ -18,54 +17,25 @@ interface BlogPostPageProps {
   };
 }
 
-async function getPostBySlug(slug: string): Promise<BlogPostTeaserItem | null> {
-  const postsCollection = collection(db, 'blogPosts');
-  const q = query(postsCollection, where('slug', '==', slug), limit(1));
-  
+export async function generateStaticParams() {
   try {
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return null;
-    }
-    const doc = querySnapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as BlogPostTeaserItem;
-  } catch (error) {
-    console.error("Error fetching post by slug:", error);
-    // This function runs on the server, so db access should be fine,
-    // but handle potential security rule issues in production.
-    return null;
+    const posts = await getBlogPosts();
+    return posts.map(post => ({ slug: post.slug }));
+  } catch (e) {
+    console.log('Error generating static params for blog:', e);
+    return [];
   }
 }
 
-async function getAllPostSlugs() {
-    const postsCollection = collection(db, 'blogPosts');
-    const q = query(postsCollection);
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-        slug: doc.data().slug,
-    }));
-}
-
-
-export async function generateStaticParams() {
-    try {
-        const slugs = await getAllPostSlugs();
-        return slugs;
-    } catch(e) {
-        console.log(e);
-        return [];
-    }
-}
-
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug);
+  const post = await getBlogPostBySlug(params.slug);
 
   if (!post) {
     return {
       title: 'Post Not Found',
     };
   }
-  
+
   const siteUrl = 'https://teriacbo.org';
   const imageUrl = post.imageUrl.startsWith('http') ? post.imageUrl : `${siteUrl}${post.imageUrl}`;
 
@@ -73,35 +43,35 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     title: `${post.title} | TERIA Blog`,
     description: post.summary,
     openGraph: {
-        title: post.title,
-        description: post.summary,
-        url: `${siteUrl}/blog/${post.slug}`,
-        images: [
-          {
-            url: imageUrl,
-            width: 1200,
-            height: 630,
-            alt: post.title,
-          }
-        ], 
-        type: 'article',
-        publishedTime: new Date(post.date).toISOString(),
-        authors: ['TERIA'],
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: post.title,
-        description: post.summary,
-        images: [imageUrl],
-      },
+      title: post.title,
+      description: post.summary,
+      url: `${siteUrl}/blog/${post.slug}`,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+      type: 'article',
+      publishedTime: new Date(post.date).toISOString(),
+      authors: ['TERIA'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.summary,
+      images: [imageUrl],
+    },
   };
 }
 
 const BlogPostPage = async ({ params }: BlogPostPageProps) => {
-  const post = await getPostBySlug(params.slug);
+  const post = await getBlogPostBySlug(params.slug);
 
   if (!post) {
-    notFound(); 
+    notFound();
   }
 
   const renderContent = (content: string) => {
@@ -129,7 +99,7 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
           </ul>
         );
       }
-      
+
       const parts = trimmedBlock.split(/(\*\*.*?\*\*)/g).filter(part => part);
       return (
         <p key={index}>
@@ -145,29 +115,29 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
   };
 
   const blogPostSchema = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.summary,
-    "image": post.imageUrl.startsWith('http') ? post.imageUrl : `https://teriacbo.org${post.imageUrl}`,
-    "author": {
-      "@type": "Organization",
-      "name": "TERIA",
-      "url": "https://teriacbo.org"
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.summary,
+    image: post.imageUrl.startsWith('http') ? post.imageUrl : `https://teriacbo.org${post.imageUrl}`,
+    author: {
+      '@type': 'Organization',
+      name: 'TERIA',
+      url: 'https://teriacbo.org',
     },
-    "publisher": {
-      "@type": "Organization",
-      "name": "TERIA",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://teriacbo.org/Logo.png"
-      }
+    publisher: {
+      '@type': 'Organization',
+      name: 'TERIA',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://teriacbo.org/Logo.png',
+      },
     },
-    "datePublished": new Date(post.date).toISOString(),
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `https://teriacbo.org/blog/${post.slug}`
-    }
+    datePublished: new Date(post.date).toISOString(),
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://teriacbo.org/blog/${post.slug}`,
+    },
   };
 
   return (
@@ -202,15 +172,15 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
                 height={450}
                 className="w-full h-auto object-contain"
                 data-ai-hint={post.imageHint}
-                priority 
+                priority
               />
             </div>
           )}
 
           <div className="prose prose-lg max-w-none text-foreground/80 text-lg space-y-4">
-             {renderContent(post.fullContent)}
+            {renderContent(post.fullContent)}
           </div>
-          
+
           {post.galleryImages && post.galleryImages.length > 0 && (
             <BlogImageCarousel
               images={post.galleryImages.map((img) => ({
@@ -219,35 +189,34 @@ const BlogPostPage = async ({ params }: BlogPostPageProps) => {
               }))}
             />
           )}
-
         </article>
-        
+
         <section className="mt-16 pt-8 border-t border-border" data-aos="fade-up" data-aos-delay="200">
-            <h2 className="text-2xl font-bold font-headline text-primary mb-6 text-center">More From TERIA</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-                <Card className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl text-primary">Explore Our Focus Areas</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-foreground/70 mb-4">Learn more about the key areas TERIA is making an impact in.</p>
-                        <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 hover:scale-105 transition-transform duration-200">
-                            <Link href="/focus-areas">Our Focus Areas</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-                <Card className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl text-primary">Get Involved</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-foreground/70 mb-4">Discover how you can support TERIA's mission and initiatives.</p>
-                         <Button asChild className="bg-tertiary text-tertiary-foreground hover:bg-tertiary/90 hover:scale-105 transition-transform duration-200">
-                            <Link href="/contact">Contact Us</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+          <h2 className="text-2xl font-bold font-headline text-primary mb-6 text-center">More From TERIA</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
+              <CardHeader>
+                <CardTitle className="font-headline text-xl text-primary">Explore Our Focus Areas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/70 mb-4">Learn more about the key areas TERIA is making an impact in.</p>
+                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 hover:scale-105 transition-transform duration-200">
+                  <Link href="/focus-areas">Our Focus Areas</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
+              <CardHeader>
+                <CardTitle className="font-headline text-xl text-primary">Get Involved</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/70 mb-4">Discover how you can support TERIA's mission and initiatives.</p>
+                <Button asChild className="bg-tertiary text-tertiary-foreground hover:bg-tertiary/90 hover:scale-105 transition-transform duration-200">
+                  <Link href="/contact">Contact Us</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </section>
       </div>
     </div>

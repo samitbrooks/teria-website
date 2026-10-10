@@ -10,8 +10,6 @@ import { Input } from '@/components/ui/input';
 import { ArrowRight, Search, Loader2 } from 'lucide-react';
 import { cn, sanitizeImageUrl } from '@/lib/utils';
 import { format } from 'date-fns';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { BlogPostTeaserItem } from '@/types';
 
 const BlogPage = () => {
@@ -21,13 +19,25 @@ const BlogPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'blogPosts'), (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlogPostTeaserItem));
-      postsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setAllBlogPosts(postsData);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    let isMounted = true;
+    fetch('/api/posts')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && Array.isArray(data.posts)) {
+          const sorted = [...data.posts].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          setAllBlogPosts(sorted);
+        }
+      })
+      .catch(err => console.error('Error fetching blog posts:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const allCategories = useMemo(() => {
@@ -69,7 +79,7 @@ const BlogPage = () => {
             <div className="lg:col-span-8">
               {loading ? (
                 <div className="flex justify-center items-center h-64">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
               ) : filteredPosts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
@@ -78,10 +88,10 @@ const BlogPage = () => {
                       key={post.id}
                       className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300 ease-in-out"
                       data-aos="fade-up"
-                      data-aos-delay={(index % 2 * 100).toString()}
+                      data-aos-delay={((index % 2) * 100).toString()}
                     >
                       <CardHeader className="p-0">
-                         <Link href={`/blog/${post.slug}`} aria-label={`Read more about ${post.title}`}>
+                        <Link href={`/blog/${post.slug}`} aria-label={`Read more about ${post.title}`}>
                           <Image
                             src={sanitizeImageUrl(post.imageUrl)}
                             alt={post.title}
@@ -95,7 +105,9 @@ const BlogPage = () => {
                       <CardContent className="flex-grow p-5 space-y-3">
                         <p className="text-xs text-muted-foreground">{format(new Date(post.date), 'MMMM d, yyyy')}</p>
                         <CardTitle className="font-headline text-lg text-primary">
-                           <Link href={`/blog/${post.slug}`} className="hover:text-primary/80 transition-colors link-underline">{post.title}</Link>
+                          <Link href={`/blog/${post.slug}`} className="hover:text-primary/80 transition-colors link-underline">
+                            {post.title}
+                          </Link>
                         </CardTitle>
                         <p className="text-sm text-foreground/70 line-clamp-3">{post.summary}</p>
                       </CardContent>
@@ -124,10 +136,10 @@ const BlogPage = () => {
                 <div>
                   <h3 className="text-xl font-semibold font-headline text-primary mb-3">Search Blog</h3>
                   <div className="relative">
-                    <Input 
-                      type="search" 
-                      placeholder="Search articles..." 
-                      className="pr-10" 
+                    <Input
+                      type="search"
+                      placeholder="Search articles..."
+                      className="pr-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -141,12 +153,12 @@ const BlogPage = () => {
                   <ul className="space-y-2">
                     {allCategories.map((category) => (
                       <li key={category}>
-                        <Button 
-                          variant="link" 
+                        <Button
+                          variant="link"
                           onClick={() => setSelectedCategory(category)}
                           className={cn(
-                            "text-foreground/70 hover:text-primary p-0 h-auto font-normal link-underline",
-                            selectedCategory === category && "text-primary font-bold"
+                            'text-foreground/70 hover:text-primary p-0 h-auto font-normal link-underline',
+                            selectedCategory === category && 'text-primary font-bold'
                           )}
                         >
                           {category}
@@ -163,7 +175,9 @@ const BlogPage = () => {
                     {allBlogPosts.slice(0, 3).map((post) => (
                       <li key={`recent-${post.id}`}>
                         <Button variant="link" asChild className="text-foreground/70 hover:text-primary p-0 h-auto font-normal text-left leading-tight link-underline">
-                           <Link href={`/blog/${post.slug}`} className="text-sm block">{post.title}</Link>
+                          <Link href={`/blog/${post.slug}`} className="text-sm block">
+                            {post.title}
+                          </Link>
                         </Button>
                       </li>
                     ))}

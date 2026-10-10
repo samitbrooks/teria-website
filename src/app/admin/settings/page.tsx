@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,7 +13,6 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import type { SiteSettings } from '@/types';
 import { useAuth } from '@/hooks/use-auth';
-import { logAudit } from '@/lib/audit';
 
 const settingsSchema = z.object({
   contactEmail: z.string().email(),
@@ -48,15 +45,30 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const docRef = doc(db, 'settings', 'site');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        form.reset(docSnap.data() as SiteSettings);
-      }
-      setLoading(false);
+    let isMounted = true;
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && data.settings) {
+          form.reset({
+            contactEmail: data.settings.contactEmail || '',
+            contactPhone1: data.settings.contactPhone1 || '',
+            contactPhone2: data.settings.contactPhone2 || '',
+            facebookUrl: data.settings.facebookUrl || '',
+            instagramUrl: data.settings.instagramUrl || '',
+            tiktokUrl: data.settings.tiktokUrl || '',
+            twitterUrl: data.settings.twitterUrl || '',
+          });
+        }
+      })
+      .catch(err => console.error('Error fetching settings:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
     };
-    fetchSettings();
   }, [form]);
 
   const onSubmit = async (data: SettingsFormValues) => {
@@ -66,9 +78,17 @@ export default function SettingsPage() {
     }
     setIsSubmitting(true);
     try {
-      await setDoc(doc(db, 'settings', 'site'), data, { merge: true });
-      await logAudit('update_site_settings', user.email, 'Updated general site settings.');
-      toast({ title: 'Success', description: 'Settings updated successfully.' });
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: 'Success', description: 'Settings updated successfully.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message || 'Failed to update settings.' });
+      }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to update settings.' });
     } finally {
@@ -77,7 +97,11 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

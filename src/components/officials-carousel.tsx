@@ -9,8 +9,6 @@ import { Navigation, Autoplay, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/autoplay';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import type { Official } from '@/types';
 import { Loader2 } from 'lucide-react';
 
@@ -19,16 +17,22 @@ const OfficialsCarousel = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const officialsCollection = collection(db, 'officials');
-    const q = query(officialsCollection, orderBy('order', 'asc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const officialsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Official));
-      setOfficials(officialsData);
-      setLoading(false);
-    });
+    let isMounted = true;
+    fetch('/api/officials')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && Array.isArray(data.officials)) {
+          setOfficials(data.officials);
+        }
+      })
+      .catch(err => console.warn('Error fetching officials:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) {

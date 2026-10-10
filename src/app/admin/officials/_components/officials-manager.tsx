@@ -2,14 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase/client';
-import { v4 as uuidv4 } from 'uuid';
 import type { Official } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Trash2, PlusCircle, Edit, UploadCloud } from 'lucide-react';
+import { Loader2, Trash2, PlusCircle, Edit } from 'lucide-react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,13 +13,22 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
-import { logAudit } from '@/lib/audit';
 import { Progress } from '@/components/ui/progress';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const officialSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -33,8 +38,8 @@ const officialSchema = z.object({
   imageHint: z.string().min(1, 'Image hint is required'),
   order: z.coerce.number().int().min(0, 'Order must be a positive number'),
 }).refine(data => data.image || data.imageUrl, {
-  message: "Either an image upload or an image URL is required.",
-  path: ["image"],
+  message: 'Either an image upload or an image URL is required.',
+  path: ['image'],
 });
 
 type OfficialFormValues = z.infer<typeof officialSchema>;
@@ -53,8 +58,8 @@ function OfficialForm({ official, onFinished }: OfficialFormProps) {
     resolver: zodResolver(officialSchema),
     defaultValues: official || { name: '', role: '', imageUrl: '', imageHint: '', order: 0 },
   });
-  
-  const imageFileRef = form.register("image");
+
+  const imageFileRef = form.register('image');
 
   const onSubmit = async (data: OfficialFormValues) => {
     if (!user?.email) {
@@ -64,50 +69,49 @@ function OfficialForm({ official, onFinished }: OfficialFormProps) {
     setIsSubmitting(true);
     setUploadProgress(0);
 
-    let finalImageUrl = official?.imageUrl;
-    let storagePath = official?.storagePath;
+    let finalImageUrl = data.imageUrl || official?.imageUrl || '';
 
     if (data.image && data.image.length > 0) {
       const file = data.image[0];
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExtension}`;
-      storagePath = `officials/${fileName}`;
-      const storageRef = ref(storage, storagePath);
-      
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      
-      finalImageUrl = await new Promise((resolve, reject) => {
-        uploadTask.on('state_changed',
-          (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
-          (error) => {
-            console.error("Upload error", error);
-            toast({ variant: 'destructive', title: 'Upload Error', description: 'Failed to upload image.' });
-            reject(error);
-          },
-          () => getDownloadURL(uploadTask.snapshot.ref).then(resolve)
-        );
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      setUploadProgress(40);
+
+      try {
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadRes.ok && uploadData.url) {
+          finalImageUrl = uploadData.url;
+        }
+      } catch (err) {
+        console.warn('Image upload error:', err);
+      }
     }
 
     try {
-      const officialData = {
+      const payload = {
+        id: official?.id,
         name: data.name,
         role: data.role,
         imageUrl: finalImageUrl,
         imageHint: data.imageHint,
         order: data.order,
-        storagePath: storagePath,
       };
 
-      if (official) {
-        await updateDoc(doc(db, 'officials', official.id!), officialData);
-        await logAudit('update_official', user.email, `Updated official: ${data.name}`);
-        toast({ title: 'Success', description: 'Official updated.' });
-      } else {
-        await addDoc(collection(db, 'officials'), officialData);
-        await logAudit('create_official', user.email, `Created official: ${data.name}`);
-        toast({ title: 'Success', description: 'Official added.' });
+      const res = await fetch('/api/officials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save official');
       }
+
+      toast({ title: 'Success', description: official ? 'Official updated.' : 'Official added.' });
       onFinished();
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save official.' });
@@ -125,7 +129,7 @@ function OfficialForm({ official, onFinished }: OfficialFormProps) {
         <FormField control={form.control} name="role" render={({ field }) => (
           <FormItem><FormLabel>Role</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )} />
-         <FormField control={form.control} name="image" render={({ field }) => (
+        <FormField control={form.control} name="image" render={() => (
           <FormItem>
             <FormLabel>New Image (optional)</FormLabel>
             <FormControl><Input type="file" {...imageFileRef} /></FormControl>
@@ -137,7 +141,7 @@ function OfficialForm({ official, onFinished }: OfficialFormProps) {
           <FormItem><FormLabel>Image URL (if not uploading)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="imageHint" render={({ field }) => (
-            <FormItem><FormLabel>Image Hint</FormLabel><FormControl><Input placeholder="e.g. person portrait" {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>Image Hint</FormLabel><FormControl><Input placeholder="e.g. person portrait" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="order" render={({ field }) => (
           <FormItem><FormLabel>Display Order</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
@@ -151,22 +155,27 @@ function OfficialForm({ official, onFinished }: OfficialFormProps) {
   );
 }
 
-
 export default function OfficialsManager() {
   const [officials, setOfficials] = useState<Official[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOfficial, setEditingOfficial] = useState<Official | null>(null);
   const { user } = useAuth();
 
+  const fetchOfficials = () => {
+    fetch('/api/officials')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.officials)) {
+          setOfficials(data.officials);
+        }
+      })
+      .catch(err => console.error('Error fetching officials:', err))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    const officialsCollection = collection(db, 'officials');
-    const q = query(officialsCollection, orderBy('order', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const officialsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Official));
-      setOfficials(officialsData);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    fetchOfficials();
   }, []);
 
   const handleDelete = async (official: Official) => {
@@ -175,12 +184,13 @@ export default function OfficialsManager() {
       return;
     }
     try {
-      await deleteDoc(doc(db, 'officials', official.id!));
-      if (official.storagePath) {
-        await deleteObject(ref(storage, official.storagePath));
+      const res = await fetch(`/api/officials?id=${official.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: 'Success', description: 'Official removed.' });
+        fetchOfficials();
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove official.' });
       }
-      await logAudit('delete_official', user.email, `Deleted official: ${official.name}`);
-      toast({ title: 'Success', description: 'Official removed.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove official.' });
     }
@@ -192,41 +202,51 @@ export default function OfficialsManager() {
 
   return (
     <div className="space-y-6">
-       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
           <Button><PlusCircle className="mr-2 h-4 w-4" /> Add New Official</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader><DialogTitle>Add New Official</DialogTitle></DialogHeader>
-          <OfficialForm onFinished={() => setIsModalOpen(false)} />
+          <OfficialForm onFinished={() => { setIsModalOpen(false); fetchOfficials(); }} />
         </DialogContent>
       </Dialog>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {officials.map((official) => (
           <div key={official.id} className="border rounded-lg p-4 space-y-2 text-center">
-            <Image src={official.imageUrl} alt={official.name} width={100} height={100} className="rounded-full mx-auto" />
+            {official.imageUrl && (
+              <Image src={official.imageUrl} alt={official.name} width={100} height={100} className="rounded-full mx-auto w-24 h-24 object-cover" />
+            )}
             <h4 className="font-semibold">{official.name}</h4>
             <p className="text-sm text-muted-foreground">{official.role}</p>
             <div className="flex justify-center gap-2 pt-2">
-              <Dialog>
-                <DialogTrigger asChild><Button variant="outline" size="sm"><Edit className="h-4 w-4 mr-1" /> Edit</Button></DialogTrigger>
+              <Dialog open={editingOfficial?.id === official.id} onOpenChange={(open) => !open && setEditingOfficial(null)}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => setEditingOfficial(official)}>
+                    <Edit className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                </DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>Edit Official</DialogTitle></DialogHeader>
-                  <OfficialForm official={official} onFinished={() => {
-                    // Find a better way to close the dialog if needed
-                  }} />
+                  <OfficialForm
+                    official={official}
+                    onFinished={() => {
+                      setEditingOfficial(null);
+                      fetchOfficials();
+                    }}
+                  />
                 </DialogContent>
               </Dialog>
-               <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this official.</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(official)}>Delete</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader><DialogTitle>Are you sure?</DialogTitle><AlertDialogDescription>This will permanently delete this official.</AlertDialogDescription></AlertDialogHeader>
+                  <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(official)}>Delete</AlertDialogAction></AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ))}

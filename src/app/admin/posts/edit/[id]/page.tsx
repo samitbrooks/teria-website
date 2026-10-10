@@ -4,8 +4,6 @@
 export const runtime = 'edge';
 
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import PostForm from '../../_components/post-form';
 import type { BlogPostTeaserItem } from '@/types';
@@ -22,23 +20,30 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPost = async () => {
-      const docRef = doc(db, 'blogPosts', params.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setPost({ id: docSnap.id, ...docSnap.data() } as BlogPostTeaserItem);
-      } else {
-        // Handle post not found
-        console.error("No such document!");
-      }
-      setLoading(false);
-    };
+    let isMounted = true;
+    fetch(`/api/posts/${params.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && data.post) {
+          setPost(data.post);
+        }
+      })
+      .catch(err => console.error('Error fetching post:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
-    fetchPost();
+    return () => {
+      isMounted = false;
+    };
   }, [params.id]);
 
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

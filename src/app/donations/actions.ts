@@ -1,10 +1,8 @@
 // src/app/donations/actions.ts
 'use server';
 
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { getSiteSettings, createDonation } from '@/lib/d1';
 import { decrypt } from '@/lib/encryption';
-import type { SiteSettings } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 export async function getPaystackPublicKey(): Promise<string> {
@@ -12,42 +10,33 @@ export async function getPaystackPublicKey(): Promise<string> {
     return process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
   }
   try {
-    const settingsRef = doc(db, 'settings', 'site');
-    const docSnap = await getDoc(settingsRef);
-    if (docSnap.exists()) {
-      const settings = docSnap.data() as any;
-      if (settings?.paystackPublicKey) {
-        return settings.paystackPublicKey;
-      }
+    const settings = await getSiteSettings();
+    if (settings?.paystackPublicKey) {
+      return settings.paystackPublicKey;
     }
   } catch (error) {
-    console.error('Error reading Paystack public key from Firestore:', error);
+    console.error('Error reading Paystack public key from settings:', error);
   }
   return '';
 }
 
 async function getPaystackSecretKey(): Promise<string> {
-  // 1. Try to get the key from Firestore settings first
+  // 1. Try to get the key from D1 settings first
   try {
-    const settingsRef = doc(db, 'settings', 'site');
-    const docSnap = await getDoc(settingsRef);
-
-    if (docSnap.exists()) {
-      const settings = docSnap.data() as any;
-      if (settings.paystackSecretKeyEncrypted) {
-        try {
-          const decryptedKey = decrypt(settings.paystackSecretKeyEncrypted);
-          if (decryptedKey) return decryptedKey;
-        } catch (error) {
-          console.error("Failed to decrypt key from Firestore, falling back to ENV.", error);
-        }
-      }
-      if (settings.paystackSecretKey) {
-        return settings.paystackSecretKey;
+    const settings = await getSiteSettings();
+    if (settings.paystackSecretKeyEncrypted) {
+      try {
+        const decryptedKey = decrypt(settings.paystackSecretKeyEncrypted);
+        if (decryptedKey) return decryptedKey;
+      } catch (error) {
+        console.error('Failed to decrypt key from settings, falling back to ENV.', error);
       }
     }
+    if ((settings as any).paystackSecretKey) {
+      return (settings as any).paystackSecretKey;
+    }
   } catch (error) {
-    console.error('Failed to fetch settings from Firestore:', error);
+    console.error('Failed to fetch settings from D1:', error);
   }
 
   // 2. Fallback to environment variable
@@ -58,11 +47,10 @@ async function getPaystackSecretKey(): Promise<string> {
   return secretKey;
 }
 
-
 export async function verifyDonation(reference: string) {
   try {
     const secretKey = await getPaystackSecretKey();
-    
+
     const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
       method: 'GET',
       headers: {
@@ -77,19 +65,16 @@ export async function verifyDonation(reference: string) {
     const data = await response.json();
 
     if (data.status && data.data.status === 'success') {
-      // Payment is successful, save to Firestore
-      const donationData = {
-        name: data.data.metadata.name || 'Anonymous',
-        email: data.data.customer.email,
+      // Payment is successful, save to D1 database
+      await createDonation({
+        name: data.data.metadata?.name || 'Anonymous',
+        email: data.data.customer?.email || '',
         amount: data.data.amount, // Amount is in kobo/cents
-        currency: data.data.currency,
+        currency: data.data.currency || 'KES',
         reference: data.data.reference,
         status: 'success',
-        createdAt: serverTimestamp(),
-      };
-      
-      await addDoc(collection(db, 'donations'), donationData);
-      
+      });
+
       revalidatePath('/admin/donations');
 
       return { success: true, message: 'Donation verified and recorded successfully.' };

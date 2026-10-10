@@ -17,8 +17,6 @@ import 'swiper/css/pagination';
 import 'swiper/css/autoplay';
 import { useState, useEffect } from 'react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
 import { Loader2 } from 'lucide-react';
 
 const projectStats = [
@@ -160,14 +158,22 @@ const ImpactPage = () => {
   useEffect(() => {
     setGalleryTitle(galleryTitles[Math.floor(Math.random() * galleryTitles.length)]);
 
-    const galleryCollection = collection(db, 'galleryImages');
-    const q = query(galleryCollection, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const imagesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryImageItem));
-      setGalleryImages(imagesData);
-      setLoadingGallery(false);
-    });
-    return () => unsubscribe();
+    let isMounted = true;
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && Array.isArray(data.images)) {
+          setGalleryImages(data.images);
+        }
+      })
+      .catch(err => console.warn('Error fetching gallery images:', err))
+      .finally(() => {
+        if (isMounted) setLoadingGallery(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
